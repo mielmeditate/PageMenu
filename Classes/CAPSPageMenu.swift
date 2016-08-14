@@ -1006,4 +1006,56 @@ public class CAPSPageMenu: UIViewController, UIScrollViewDelegate, UIGestureReco
             })
         }
     }
+    
+    // MARK: - Move to page index with didMoveToPage delegate call
+    
+    /**
+     Move to page index with didMoveToPage delegate call
+     
+     :param: index Index of the page to move to
+     */
+    public func moveWithTapToPage(index: Int) {
+        if index >= 0 && index < controllerArray.count {
+            // Update page if changed
+            if index != currentPageIndex {
+                startingPageForScroll = index
+                lastPageIndex = currentPageIndex
+                currentPageIndex = index
+                didTapMenuItemToScroll = true
+                
+                // Add pages in between current and tapped page if necessary
+                let smallerIndex : Int = lastPageIndex < currentPageIndex ? lastPageIndex : currentPageIndex
+                let largerIndex : Int = lastPageIndex > currentPageIndex ? lastPageIndex : currentPageIndex
+                
+                if smallerIndex + 1 != largerIndex {
+                    for i in (smallerIndex + 1)...(largerIndex - 1) {
+                        if pagesAddedDictionary[i] != i {
+                            addPageAtIndex(i)
+                            pagesAddedDictionary[i] = i
+                        }
+                    }
+                }
+                
+                addPageAtIndex(index)
+                
+                // Add page from which tap is initiated so it can be removed after tap is done
+                pagesAddedDictionary[lastPageIndex] = lastPageIndex
+            }
+            
+            // Move controller scroll view when tapping menu item
+            let duration : Double = Double(scrollAnimationDurationOnMenuItemTap) / Double(1000)
+            
+            UIView.animateWithDuration(duration, animations: { () -> Void in
+                let xOffset : CGFloat = CGFloat(index) * self.controllerScrollView.frame.width
+                self.controllerScrollView.setContentOffset(CGPoint(x: xOffset, y: self.controllerScrollView.contentOffset.y), animated: false)
+            })
+            
+            if tapTimer != nil {
+                tapTimer!.invalidate()
+            }
+            
+            let timerInterval : NSTimeInterval = Double(scrollAnimationDurationOnMenuItemTap) * 0.001
+            tapTimer = NSTimer.scheduledTimerWithTimeInterval(timerInterval, target: self, selector: "scrollViewDidEndTapScrollingAnimation", userInfo: nil, repeats: false)
+        }
+    }
 }
